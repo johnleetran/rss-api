@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  rss-api
+
+  Sample SAM Template for rss-api
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+  Api:
+    Cors:
+      AllowMethods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+      # For example, "'GET,POST,DELETE'". If you omit this property, then SAM will automatically allow all the methods configured for each API.
+      # Checkout [HTTP Spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods) more details on the value.
+
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      # For example, "'X-Forwarded-For'". Checkout [HTTP Spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers) for more details on the value
+
+      AllowOrigin: "'*'"
+      # For example, "'www.example.com'". Checkout [HTTP Spec](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin) for more details on this value.
+    Auth:
+      ApiKeyRequired: true # sets for all methods
+      AddDefaultAuthorizerToCorsPreflight: False # removes MyAuthorizer from the automatically created OPTIONS methods
+
+Resources:
+  RSSFeedApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: RSSFeedAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: true # removes MyAuthorizer from the automatically created OPTIONS methods
+  ListRSSFeedFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: listRSSFeed/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          bucket: jotran-rss-feed-prod
+          region: us-west-1
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 's3:*'
+              Resource: 'arn:aws:s3:::*'
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref RSSFeedApi
+            Path: /feed
+            Method: get
+
+  AddRSSFeedFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: addRSSFeed/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          bucket: jotran-rss-feed-prod
+          region: us-west-1
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 's3:*'
+              Resource: 'arn:aws:s3:::*'
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref RSSFeedApi
+            Path: /feed
+            Method: post
+
+  DeleteRSSFeedFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: deleteRSSFeed/
+      Handler: app.lambdaHandler
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          bucket: jotran-rss-feed-prod
+          region: us-west-1
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 's3:*'
+              Resource: 'arn:aws:s3:::*'
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            RestApiId: !Ref RSSFeedApi
+            Path: /feed
+            Method: delete
+
+
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  ListRSSFeedApi:
+    Description: "ListRSSFeedApi Endpoint"
+    Value: !Sub "https://${RSSFeedApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/feed"
+
+  AddRSSFeedApi:
+    Description: "AddRSSFeedApi Endpoint"
+    Value: !Sub "https://${RSSFeedApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/feed"
+
+  DeleteRSSFeedApi:
+    Description: "DeleteRSSFeedApi endpoint"
+    Value: !Sub "https://${RSSFeedApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/feed"
+
+  ListRSSFeedFunction:
+    Description: "ListRSSFeedApi"
+    Value: !GetAtt ListRSSFeedFunction.Arn
+  RSSFeedFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt ListRSSFeedFunctionRole.Arn
